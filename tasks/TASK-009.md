@@ -17,5 +17,5 @@ validateMultipleInRelationsOfSameTypeShouldUseJunctionInstead();
 
 ## 3. Тест кейсы
 
-![Тесты на правильное использование junction И](images/TASK-009_1.png)
-![Тесты на правильное использование junction ИЛИ](images/TASK-009_2.png)
+![Тесты на правильное использование junction И](../images/TASK-009_1.png)
+![Тесты на правильное использование junction ИЛИ](../images/TASK-009_2.png)

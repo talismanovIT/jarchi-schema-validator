@@ -10,4 +10,4 @@
 
 ## 3. Тест кейсы
 
-![Тесты на правильное взаимодействие business-process'a](images/TASK-007.png)
+![Тесты на правильное взаимодействие business-process'a](../images/TASK-007.png)

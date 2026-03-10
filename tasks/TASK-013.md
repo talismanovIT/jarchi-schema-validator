@@ -10,4 +10,4 @@
 
 ## 3. Тест кейсы
 
-![Тесты на правильное взаимодействия app componenta](images/TASK-013.png)
+![Тесты на правильное взаимодействия app componenta](../images/TASK-013.png)

@@ -10,4 +10,4 @@
 
 ## 3. Тест кейсы
 
-![Тесты на правильное взаимодействие business-actor'a](images/TASK-006.png)
+![Тесты на правильное взаимодействие business-actor'a](../images/TASK-006.png)

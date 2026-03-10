@@ -1,0 +1,515 @@
+//script settings
+let LOGGING_LEVEL = "INFO";//if DEBUG then we show result of console.log
+
+//init
+var alertResult = "";
+var count = 1;
+//старт скрипта, логика завернута в main
+main();
+
+function main() {
+
+    console.log("Business process validator");
+    console.show();
+
+    printCurrentViewForDebug();
+
+    //validation rules
+    //common rules
+    validateSpecificationInLabelAndLabelExists();
+
+    validateThatElementsHaveRelationsOnDiagram();
+    //business layer rules
+    validateBusinessProcessOutRelations();
+    validateBusinessActorOutRelations();
+    validateBusinessServiceOutRelations();
+    validateMultipleOutRelationsOfSameTypeShouldUseJunctionInstead();
+    validateMultipleInRelationsOfSameTypeShouldUseJunctionInstead();
+    //application layer rules
+    //конфликтует со следующим правилом, временно убрано.
+    // validateAppComponentHasRealizationOutRelation();
+    validateAppComponentHasCorrectOutRelations();
+    validateThatSyncAppInterfacesMustHaveComposition();
+    validateDatabasePerService();
+    validateAppInterfaceHasCorrectInAndOutRelations();
+    validateAppServiceOutRelations();
+    validateAppFunctionHasInAssignment();
+    //validateMicroserviceCantCallSpa();
+    validateQueueOrTopicOnlyFlowInAndOut();
+
+    //alert report
+    if (!alertResult.isEmpty()) {
+        window.alert(alertResult);
+    }
+    console.log("Business process validator done");
+}
+//----------------------------END OF MAIN SCRIPT--------------------------------------
+
+//validation functions
+function validateBusinessProcessOutRelations() {
+    $(selection).children().filter("business-process").outRels().each(function (rel) {
+        println("BusinessProcess outRels");
+        var outRelString = rel + "";
+        println("rel=" + outRelString);
+        if (outRelString.contains("triggering-relationship") || outRelString.contains("flow-relationship") || outRelString.contains("specialization-relationship")) {
+            println("ok relation");
+        } else {
+            println("bad relation");
+            // window.alert("bad relation");
+            alertResult += validationErrorMessage(count, outRelString, rel.source.name);
+            count++;
+        }
+        println("rel.source=" + rel.source);
+        println("rel.target=" + rel.target);
+        println("---------------------------");
+    });
+}
+
+
+function validateBusinessActorOutRelations() {
+    $(selection).children().filter("business-actor").outRels().each(function (rel) {
+        println("BusinessActor outRels");
+        var outRelString = rel + "";
+        println("rel=" + outRelString);
+        if (outRelString.contains("assignment-relationship")) {
+            println("ok relation");
+        } else {
+            println("bad relation");
+            alertResult += validationErrorMessage(count, outRelString, rel.source.name);
+            count++;
+        }
+
+    });
+}
+
+function validateBusinessServiceOutRelations() {
+    $(selection).children().filter("business-service").outRels().each(function (rel) {
+        println("BusinessService outRels");
+        var outRelString = rel + "";
+        println("rel=" + outRelString);
+        if (outRelString.contains("serving-relationship")) {
+            println("ok relation");
+        } else {
+            println("bad relation");
+            // window.alert("bad relation");
+            //alertResult += count + ". business-service out relation can't be " + outRelString + "rel.source.name=" + rel.source.name + "\n";
+            alertResult += validationErrorMessage(count, outRelString, rel.source.name);
+            count++;
+        }
+
+    });
+}
+
+function validateMultipleOutRelationsOfSameTypeShouldUseJunctionInstead() {
+    const relationToCountMap = new Map();
+    $(selection).children().outRels().each(function (rel) {
+        //лучше выше отфильтровать, костыльно, но быстро
+        if(rel.source.type == "business-event" || rel.source.type == "business-process") {
+            println("outRels of the same type have to be changed to junction");
+            var outRelString = rel + "";
+            var sourceName = rel.source.name;
+            var key = sourceName + "|" + outRelString;
+            var countValue = relationToCountMap.get(key);
+            println("countValue=" + countValue);
+            if (countValue == undefined || countValue == 0) {
+                relationToCountMap.set(key, 1);
+            } else {
+                relationToCountMap.set(key, countValue + 1);
+            }
+            println("rel=" + outRelString);
+
+            relationToCountMap.forEach((value, key) => {
+                if (value > 1) {
+                    alertResult += `${count}. Элемент ${sourceName} имеет несколько исходящих связей ${outRelString}. Используйте Junction ИЛИ(OR)\n`;
+                    count++;
+                }
+            })
+            println(relationToCountMap);
+        }
+    });
+}
+
+function validateMultipleInRelationsOfSameTypeShouldUseJunctionInstead() {
+    const relationToCountMap = new Map();
+    $(selection).children().inRels().each(function (rel) {
+        if(rel.target.type == "business-event" || rel.target.type == "business-process") {
+            println("inRels of the same type have to be changed to junction");
+            var inRelString = rel + "";
+            var targetName = rel.target.name;
+            var key = targetName + "|" + inRelString;
+            var countValue = relationToCountMap.get(key);
+            println("countValue=" + countValue);
+            if (countValue == undefined || countValue == 0) {
+                relationToCountMap.set(key, 1);
+            } else {
+                relationToCountMap.set(key, countValue + 1);
+            }
+            println("rel=" + inRelString);
+
+            relationToCountMap.forEach((value, key) => {
+                if (value > 1) {
+                    alertResult += `${count}. Элемент ${targetName} имеет несколько входящих связей ${inRelString}. Используйте Junction И(AND)\n`;
+                    count++;
+                }
+            })
+            println(relationToCountMap);
+        }
+    });
+}
+
+function validateSpecificationInLabelAndLabelExists() {
+    println("validateSpecificationInLabelAndLabelExists");
+    $(selection).children().each(function (element) {
+        println("----------element.specialization=" + element.specialization);
+        if (element.specialization != null) {
+            if (element != null) {
+                if (element.labelExpression == null || !element.labelExpression.contains("<<${specialization}>>")) {
+                    alertResult += `${count}. Элемент ${element.name} не проставил specialization в label.\n`;
+                    count++;
+                }
+            }
+        }
+    });
+}
+
+//TODO не корректно работает, если нет связей вообще
+//надо переработать логику и объединить с другим методом, техдолг
+function validateAppComponentHasRealizationOutRelation() {
+    $(selection).children().filter("application-component").outRels().each(function (rel) {
+        println("Application Component outRels");
+        var outRelString = rel + "";
+        println("rel=" + outRelString);
+        if (outRelString.contains("realization-relationship")) {
+            println("ok relation");
+        } else {
+            println("bad relation");
+            // window.alert("bad relation");
+            //alertResult += count + ". business-service out relation can't be " + outRelString + "rel.source.name=" + rel.source.name + "\n";
+            alertResult += validationErrorMessage(count, outRelString, rel.source.name);
+            count++;
+        }
+
+    });
+}
+
+function validateThatElementsHaveRelationsOnDiagram() {
+    //переписать на списки
+    $(selection).children().each(function (element) {
+
+        var elementTypes = [
+            "business-role", "business-actor", "business-collaboration",
+            "business-interface", "business-process", "business-function",
+            "business-interaction", "business-event", "business-service",
+            "business-object", "business-contract", "business-representation",
+            "business-product",
+            //application layer
+            "application-collaboration", "application-interface",
+            "application-process", "application-function", "application-interaction",
+            "application-event", "application-service", "data-object",
+            "application-component"
+        ];
+        if (elementTypes.indexOf(element.type) >= 0) {
+            var hasAnyRels = $(element).rels().size() > 0;
+
+            if (!hasAnyRels) {
+                alertResult += `${count}. Элемент ${element.name} (${element.type}) не имеет связей.\n`;
+                count++;
+            }
+        }
+    });
+}
+
+function validateThatSyncAppInterfacesMustHaveComposition() {
+    println("validateThatSyncAppInterfacesMustHaveComposition");
+    $(selection).children().filter("application-interface").each(function (element) {
+
+        if (element.specialization == "soap" ||
+            element.specialization == "grpc" ||
+            element.specialization == "stored-procedure" ||
+            element.name.contains("GET") ||
+            element.name.contains("POST") ||
+            element.name.contains("PUT") ||
+            element.name.contains("DELETE") ||
+            element.name.contains("PATCH")) {
+            var hasComposition = false;
+            $(element).inRels().each(function (rel) {
+                var outRelString = rel + "";
+                println("rel=" + outRelString);
+                if (outRelString.contains("composition-relationship")) {
+                    hasComposition = true;
+                }
+            });
+
+            if (hasComposition) {
+                println("validateThatSyncAppIntefacesMustHaveComposition is ok");
+            } else {
+                println("validateThatSyncAppIntefacesMustHaveComposition is bad");
+                alertResult += `${count}. Элемент ${element.name} не имеет связи композиция.\n`;
+                count++;
+            }
+        } else if (element.specialization == "queue" ||
+            element.specialization == "topic"
+        ) {
+            //topic queue and others
+            var hasComposition = false;
+            $(element).inRels().each(function (rel) {
+                var outRelString = rel + "";
+                println("rel=" + outRelString);
+                if (outRelString.contains("composition-relationship")) {
+                    hasComposition = true;
+                }
+            });
+
+            if (hasComposition) {
+                println("validateThatSyncAppIntefacesMustHaveComposition is bad");
+                alertResult += `${count}. Элемент ${element.name} не должен иметь связи композиция.\n`;
+                count++;
+            } else {
+                println("validateThatSyncAppIntefacesMustHaveComposition is ok");
+            }
+        } else {
+            println("unknown interface, should be REST, soap, grpc, stored-procedure, queue, topic");
+        }
+    });
+}
+
+function validateAppComponentHasCorrectOutRelations() {
+
+    function allTypesValid(outRelString) {
+        return outRelString.contains("realization-relationship") ||
+            outRelString.contains("triggering-relationship") ||
+            outRelString.contains("composition-relationship") ||
+            outRelString.contains("aggregation-relationship") ||
+            outRelString.contains("assignment-relationship") ||
+            outRelString.contains("access-relationship") ||
+            outRelString.contains("flow-relationship");
+    }
+
+    $(selection).children().filter("application-component").outRels().each(function (rel) {
+        console.log("Application Component outRels");
+        var outRelString = rel + "";
+        console.log("rel=" + outRelString);
+        //realization-relationship обязательная
+        console.log("allTypesValid=" + allTypesValid(outRelString));
+        if (allTypesValid(outRelString)) {
+            console.log("ok relation");
+        } else {
+            console.log("bad relation");
+            // window.alert("bad relation");
+            //alertResult += count + ". business-service out relation can't be " + outRelString + "rel.source.name=" + rel.source.name + "\n";
+            alertResult += validationErrorMessage(count, outRelString, rel.source.name);
+            count++;
+        }
+        console.log("\n")
+    });
+}
+
+function validateDatabasePerService() {
+    println("validateDatabasePerService");
+    $(selection).children().filter("data-object").each(function (element) {
+        const relationToCountMap = new Map();
+        //todo add access relation rule
+        $(element).inRels().each(function (rel) {
+            println("assume we have only access relation");
+            var inRelString = rel + "";
+            var key = inRelString;
+            var countValue = relationToCountMap.get(key);
+            println("countValue=" + countValue);
+
+            if (countValue == undefined || countValue == 0) {
+                relationToCountMap.set(key, 1);
+            } else {
+                relationToCountMap.set(key, countValue + 1);
+            }
+            println("rel=" + inRelString);
+        });
+        relationToCountMap.forEach((value, key) => {
+            if (value > 1) {
+                alertResult += `${count}. Элемент ${element.name} является базой данных. Должен иметь только одну access relation.\n`;
+                count++;
+            }
+        })
+        println(relationToCountMap);
+
+    });
+}
+
+function validateAppInterfaceHasCorrectInAndOutRelations() {
+    console.log("validateAppInterfaceHasCorrectInAndOutRelations")
+    $(selection).children().filter("application-interface").each(function (element) {
+        $(element).inRels().each(function (rel) {
+            var relString = rel + "";
+            println("rel=" + relString);
+            if (relString.contains("flow-relationship") ||
+                relString.contains("triggering-relationship") ||
+                relString.contains("composition-relationship")
+            ) {
+                println("ok relation");
+            } else {
+                println("bad relation");
+                alertResult += `${count}. Элемент ${element.name} имеет не корректную in связь ${rel.target.name}.\n`;
+                count++;
+            }
+        });
+
+        $(element).outRels().each(function (rel) {
+            var relString = rel + "";
+            println("rel=" + relString);
+            if (relString.contains("flow-relationship")) {
+                println("ok relation");
+            } else {
+                println("bad relation");
+                alertResult += `${count}. Элемент ${element.name} имеет не корректную out связь ${rel.target.name} напрямую.\n`;
+                count++;
+            }
+        });
+    });
+}
+
+function validateAppServiceOutRelations() {
+    console.log("validateAppServiceOutRelations");
+
+    $(selection).children().filter("application-service").outRels().each(function (rel) {
+        var relString = rel + "";
+        println("rel=" + relString);
+        if (relString.contains("serving-relationship") ||
+            relString.contains("realization-relationship")
+        ) {
+            println("ok relation");
+        } else {
+            println("bad relation");
+            var element = $(element);
+            alertResult += `${count}. Элемент ${element.name} имеет не корректную out связь ${rel.target.name}.\n`;
+            count++;
+        }
+    });
+
+}
+
+//todo оптимизация, если будет долго отрабатывать. пока O(n^2)
+//возможны баги
+function validateMicroserviceCantCallSpa() {
+    println("\nvalidateMicroserviceCantCallSpa\n");
+    $(selection).children().filter("application-component").each(function (element) {
+        var childrenOfNotSpa = [];
+        var i = 0;
+        //проверка, что это не spa
+        if (element.specialization != "spa") {
+            //найти все out отношения
+            $(element).outRels().each(function (rel) {
+                if (rel.target.specialization == "spa") {
+                    alertResult += `${count}. Элемент ${element.name} взаимодействует с spa ${rel.target.name} напрямую.\n`;
+                    count++;
+                    return;
+                }
+
+                // Сохраняем целевой элемент для дальнейшей проверки
+                if (rel.target) {
+                    childrenOfNotSpa.push(rel.target);
+                    println("Добавлен целевой элемент:", rel.target.name);
+                }
+
+            });
+            //добавить их в детей компонента
+            //пробежаться по потомкам и проверить, что таргет не spa
+        } else if (element.specialization == "spa") {
+            //проверка2, что spa напрямую не вызывает app component
+            $(element).outRels().each(function (rel) {
+                if (rel.target.type == "application-component") {
+                    alertResult += `${count}. Элемент ${element.name} взаимодействует с application-component ${rel.target.name} напрямую.\n`;
+                    count++;
+                    return;
+                }
+            });
+        }
+        println("childrenOfNotSpa=" + childrenOfNotSpa);
+        // Проверяем цепочку вызовов
+            for (var i = 0; i < childrenOfNotSpa.length; i++) {
+                var childElement = childrenOfNotSpa[i];
+                println("childElement=" + childElement);
+
+                // ВАЖНО: оборачиваем childElement в $() для получения метода outRels()
+                $(childElement).rels().each(function (rel2) {
+                    if ((rel2.target && rel2.target.specialization == "spa") ||
+                    (rel2.source && rel2.source.specialization == "spa")) {
+                        alertResult += `${count}. Элемент ${element.name} взаимодействует с spa ${rel2.target.name} через ${childElement.name}.\n`;
+                        count++;
+                    }
+                });
+            }
+        println("\n")
+    });
+}
+
+function validateAppFunctionHasInAssignment() {
+    console.log("validateAppFunctionHasInAssignment");
+    $(selection).children().filter("application-function").each(function (element) {
+        $(element).inRels().each(function (rel) {
+            var relString = rel + "";
+            println("rel=" + relString);
+            if (relString.contains("assignment-relationship")) {
+                println("ok relation");
+            } else {
+                println("bad relation");
+                alertResult += validationErrorMessage(count, relString, rel.source.name);
+                count++;
+            }
+        });
+    });
+}
+
+function validateQueueOrTopicOnlyFlowInAndOut() {
+    println("\nvalidateQueueOrTopicOnlyFlowInAndOut\n");
+    $(selection).children().filter("application-interface").each(function (element) {
+        if (element.specialization == "queue" || element.specialization == "topic") {
+            $(element).outRels().each(function (rel) {
+                var relString = rel + "";
+                println("rel=" + relString);
+                if (relString.contains("flow-relationship")) {
+                    println("ok relation");
+                } else {
+                    println("bad relation");
+                    alertResult += validationErrorMessage(count, relString, rel.source.name);
+                    count++;
+                }
+            });
+
+            $(element).inRels().each(function (rel) {
+                var relString = rel + "";
+                println("rel=" + relString);
+                if (relString.contains("flow-relationship")) {
+                    println("ok relation");
+                } else {
+                    println("bad relation");
+                    alertResult += validationErrorMessage(count, relString, rel.source.name);
+                    count++;
+                }
+            });
+        }
+    });
+}
+
+function validateBusinessEventOutRelations() {
+//todo
+}
+
+//helper functions
+
+function println(text) {
+    if ("DEBUG" == LOGGING_LEVEL) {
+        console.log(text);
+    }
+}
+
+function validationErrorMessage(count, outRelString, sourceName) {
+    // return `${count}. business-service out relation can't be ${outRelString}rel.source.name=${sourceName}\n`;
+    return `${count}. Элемент ${sourceName} имеет некорректную связь ${outRelString}\n`;
+}
+
+function printCurrentViewForDebug() {
+    if ($(selection).filter("archimate-diagram-model").size() == 1) {
+        // $(selection).filter("archimate-diagram-model") is a collection, so one has to apply '.first' to make it a element
+        var view = $(selection).filter("archimate-diagram-model").first();
+        println('Existing selected view is : "', view.name, '"');
+    }
+}

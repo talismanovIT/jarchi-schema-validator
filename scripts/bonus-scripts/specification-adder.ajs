@@ -1,0 +1,32 @@
+//settings and constants
+let SPECIALIZATION_TEMPLATE = "<<${specialization}>>";
+
+main();
+
+func main() {
+
+    console.log("Specification adder");
+    console.show();
+    
+    //core logic
+    addSpecification();
+    
+    window.alert("done");
+}
+//----------------------------END OF MAIN SCRIPT--------------------------------------
+
+function addSpecification() {
+    console.log("validateSpecificationInLabelAndLabelExists");
+    $(selection).children().each(function (element) {
+        console.log("----------element.specialization=" + element.specialization);
+        if (element.specialization != null && element != null) {
+            if (element.labelExpression == null || !element.labelExpression.contains(SPECIALIZATION_TEMPLATE)) {
+                element.labelExpression = getSpecializationName(element.name)
+            }
+        }
+    });
+}
+//helper functions
+function getSpecializationName(elementName) {
+    return SPECIALIZATION_TEMPLATE + "\n" + elementName
+}

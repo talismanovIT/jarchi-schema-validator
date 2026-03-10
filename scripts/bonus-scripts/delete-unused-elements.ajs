@@ -1,0 +1,18 @@
+var response = window.confirm("This script will delete any element or relationship not used in at least one view. Continue?");
+
+var deletedCount = 0;
+if (!response)
+  exit();
+
+$("concept").each(function(e) {
+    if($(e).objectRefs().isEmpty()) {
+        e.delete();
+        deletedCount++;
+    }
+    if (deletedCount > 0 && deletedCount % 1000 == 0) {
+        console.log("Deleted count=" + deletedCount);
+    }
+});
+
+console.log("Удалено неиспользуемых элементов из модели: " + deletedCount);
+window.alert("Удалено неиспользуемых элементов из модели: " + deletedCount);

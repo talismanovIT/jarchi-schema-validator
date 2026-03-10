@@ -1,12 +1,21 @@
 # Данный репозиторий представляет собой описанный функционал для валидации схем с помощью инструмента jArchi.
 Версия 1.0.0-beta
 
-TODO добавить папку с моделью .archimate с тестированием\
-TODO сделать образцовые схемы бизнес-процесса\
-TODO сделать образцовый системный слой\
-TODO сделать образцовую схему решения
+Пример работы:
+
+Шаг 1. Рисуем диаграмму (диаграмма сознательно сделана ужасной)
+![business-process-view-for-base-test.bmp](diagram-examples/business-process-view-for-base-test.bmp)
+
+Шаг 2. Заходим в Archi в Scripts->Script Manager и запускаем наш скрипт. Получаем ошибки
+![report-with-errors.png](images/report-with-errors.png)
+Шаг 3. Исправляем ошибки
 
 ## 1. Разворачивание
+
+* берем скрипт из папки scripts
+* заходим в Archi в Preferences->Scripting и кладем скрипт в папочку Scripts folder
+* заходим в Script Manager
+* запускаем скрипт
 
 ## 2. Настройки
 
@@ -79,4 +88,10 @@ SECOND QUEUE
 ### Предстоящие технические задачи
 - [ ] реализовать поддержку русского и английского языка для вывода результатов работы
 
------------------
+### Примеры диаграмм
+бизнес-слой
+![correct-business-layer.bmp](diagram-examples/correct-business-layer.bmp)
+архитектура решения
+![correct-solution.bmp](diagram-examples/correct-solution.bmp)
+концепт архитектуры решения
+![correct-solution-concept.bmp](diagram-examples/correct-solution-concept.bmp)

@@ -51,7 +51,7 @@ APPLICATION LAYER
 - [x] ([TASK-012.md](tasks/TASK-012.md)) исходящие связи из app component должны быть realization, composition, aggregation, flow, triggering
 - [x] ([TASK-013.md](tasks/TASK-013.md)) у интерфейсов могут быть связи composition, flow (out and in), triggering (in)
 - [x] ([TASK-014.md](tasks/TASK-014.md)) application service может serve business process, realize business service
-- [ ] ([TASK-015.md](tasks/TASK-015.md)) application function связана через assignment
+- [x] ([TASK-015.md](tasks/TASK-015.md)) application function связана через assignment
 - [x] ([TASK-005.md](tasks/TASK-005.md)) queue или topic интерфейсы не должны иметь композицию от сервиса и не должны иметь триггеринг спять. Только флоу in и out
 - [x] ([TASK-001.md](tasks/TASK-001.md)) интерфейсы с типом REST, gRPC, SOAP, stored procedure должны иметь композицию до сервиса, который обрабатывает данный запрос (с gRPC при стриминге, особенно двунаправленном надо подумать)
 - [x] ([TASK-002.md](tasks/TASK-002.md)) Database per service (нельзя обращаться к одной логической базе из нескольких сервисов при микросервисной архитектуре)

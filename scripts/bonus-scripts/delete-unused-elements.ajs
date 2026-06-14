@@ -1,18 +1,44 @@
-var response = window.confirm("This script will delete any element or relationship not used in at least one view. Continue?");
+// ============================================================
+// Delete Unused Elements — jArchi bonus script
+// Removes all elements and relationships from the model
+// that are not referenced in any view.
+//
+// Usage: run from Scripts → Script Manager (no selection needed).
+// WARNING: this modifies the model — use with caution.
+// ============================================================
 
-var deletedCount = 0;
-if (!response)
-  exit();
+const BATCH_LOG_INTERVAL = 1000;
 
-$("concept").each(function(e) {
-    if($(e).objectRefs().isEmpty()) {
-        e.delete();
-        deletedCount++;
-    }
-    if (deletedCount > 0 && deletedCount % 1000 == 0) {
-        console.log("Deleted count=" + deletedCount);
-    }
-});
+const confirmed = window.confirm(
+    "Этот скрипт удалит все элементы и связи, " +
+    "которые не используются ни в одном представлении.\n\n" +
+    "Продолжить?"
+);
 
-console.log("Удалено неиспользуемых элементов из модели: " + deletedCount);
-window.alert("Удалено неиспользуемых элементов из модели: " + deletedCount);
+if (!confirmed) {
+    console.log("Отменено пользователем");
+} else {
+    deleteUnusedConcepts();
+}
+
+function deleteUnusedConcepts() {
+    console.show();
+    console.log("Delete unused elements — start");
+
+    let deletedCount = 0;
+
+    $("concept").each(function (element) {
+        if ($(element).objectRefs().isEmpty()) {
+            element.delete();
+            deletedCount++;
+
+            if (deletedCount % BATCH_LOG_INTERVAL === 0) {
+                console.log("Удалено: " + deletedCount + "...");
+            }
+        }
+    });
+
+    const message = "Удалено неиспользуемых элементов из модели: " + deletedCount;
+    console.log("Delete unused elements — done. " + message);
+    window.alert(message);
+}

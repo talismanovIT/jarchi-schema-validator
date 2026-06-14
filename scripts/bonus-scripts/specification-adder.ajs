@@ -1,32 +1,51 @@
-//settings and constants
-let SPECIALIZATION_TEMPLATE = "<<${specialization}>>";
+// ============================================================
+// Specification Adder — jArchi bonus script
+// Automatically adds <<${specialization}>> to the label
+// expression of any element that has a specialization set
+// but is missing it in the label.
+//
+// Usage: select a view in Archi, then run this script
+//        via Scripts → Script Manager.
+// ============================================================
+
+const SPECIALIZATION_TEMPLATE = "<<${specialization}>>";
 
 main();
 
-func main() {
-
-    console.log("Specification adder");
+// FIX: was written as `func main()` — JavaScript syntax error, script never ran
+function main() {
+    console.log("Specification adder — start");
     console.show();
-    
-    //core logic
-    addSpecification();
-    
-    window.alert("done");
-}
-//----------------------------END OF MAIN SCRIPT--------------------------------------
 
-function addSpecification() {
-    console.log("validateSpecificationInLabelAndLabelExists");
+    addSpecializationToLabels();
+
+    console.log("Specification adder — done");
+    window.alert("Готово: специализации добавлены в label");
+}
+
+/**
+ * For each selected element that has a specialization but lacks
+ * <<${specialization}>> in its labelExpression, prepend the template.
+ */
+function addSpecializationToLabels() {
     $(selection).children().each(function (element) {
-        console.log("----------element.specialization=" + element.specialization);
-        if (element.specialization != null && element != null) {
-            if (element.labelExpression == null || !element.labelExpression.contains(SPECIALIZATION_TEMPLATE)) {
-                element.labelExpression = getSpecializationName(element.name)
-            }
+        // FIX: check element != null before accessing .specialization
+        if (element == null || element.specialization == null) return;
+
+        if (element.labelExpression == null ||
+                !element.labelExpression.contains(SPECIALIZATION_TEMPLATE)) {
+            element.labelExpression = buildLabelExpression(element.name);
+            console.log("Updated label for: " + element.name);
         }
     });
 }
-//helper functions
-function getSpecializationName(elementName) {
-    return SPECIALIZATION_TEMPLATE + "\n" + elementName
+
+/**
+ * Builds a label expression that shows the specialization tag above the element name.
+ *
+ * @param {string} elementName - the current element name
+ * @returns {string} label expression with specialization template
+ */
+function buildLabelExpression(elementName) {
+    return SPECIALIZATION_TEMPLATE + "\n" + elementName;
 }
